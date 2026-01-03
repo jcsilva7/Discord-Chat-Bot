@@ -86,7 +86,18 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    if client.user in message.mentions and message.author != client.user:
+    if message.author == client.user:
+        return
+
+    mentioned = client.user in message.mentions
+
+    replied_to_bot = (
+        message.reference
+        and message.reference.resolved
+        and message.reference.resolved.author == client.user
+    )
+
+    if mentioned or replied_to_bot:
         console_log("Bot mentioned, answering")
 
         response = await get_model_response(message)
