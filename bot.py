@@ -57,7 +57,7 @@ async def get_model_response(message: discord.Message) -> str|None:
             data = json.load(info_file)
 
         # Check who is mentioned
-        matches = [key for key in data.keys() if key in content]
+        matches = [key for key in data.keys() if key.lower() in content.lower()]
 
         if matches:
             prompt += "\nThis is personalized info from people mentioned, make sure to include it\n"
@@ -79,7 +79,7 @@ async def get_model_response(message: discord.Message) -> str|None:
             {"role": "system", "content": prompt}
         ],
         # CHANGE MAX TOKEN USAGE HERE
-        "max_tokens": 200,
+        "max_tokens": 350,
         "temperature": 0.7
     }
 
