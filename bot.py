@@ -16,7 +16,7 @@ client = discord.Client(intents=intents)
 # Context related variables
 ENABLE_CONTEXT = False
 CONTEXT_WINDOW_SIZE = -1
-CONTEXT_WINDOW = []
+CONTEXT_WINDOW = {}
 
 # Person specific info variables
 # Allow personalised info (from a JSON) for different people to reduce token usage
@@ -46,10 +46,12 @@ async def get_model_response(message: discord.Message) -> str|None:
     prompt = f"{instructions}"
 
     if ENABLE_CONTEXT:
+        group_id = message.guild.id
+        guild_context = CONTEXT_WINDOW.get(group_id, [])
         prompt += f"""
             These are the {CONTEXT_WINDOW_SIZE} previous messages and answers
             in the format "User_Nickname: user_message\nModel_response":
-            {CONTEXT_WINDOW}
+            {guild_context}
         """
 
     if ENABLE_PERSONALISED:
@@ -60,7 +62,7 @@ async def get_model_response(message: discord.Message) -> str|None:
         matches = [key for key in user_data.keys() if key.lower() in content.lower()]
 
         if matches:
-            prompt += "\nThis is personalized info from people mentioned, make sure to include it\n"
+            prompt += "\nThis is personalised info from people mentioned, make sure to include it\n"
             for match in matches:
                 prompt += f"""
                         {match} personal info:
@@ -104,9 +106,15 @@ async def get_model_response(message: discord.Message) -> str|None:
 
                 # Cut previous messages
                 if ENABLE_CONTEXT:
-                    CONTEXT_WINDOW.append(f"{nick}: {content}\n{response}")
-                    if len(CONTEXT_WINDOW) > CONTEXT_WINDOW_SIZE:
-                        CONTEXT_WINDOW.pop(0)
+                    guild_id = message.guild.id
+
+                    if guild_id not in CONTEXT_WINDOW:
+                        CONTEXT_WINDOW[guild_id] = []
+
+                    CONTEXT_WINDOW[guild_id].append(f"{nick}: {content}\n{response}")
+
+                    if len(CONTEXT_WINDOW[guild_id]) > CONTEXT_WINDOW_SIZE:
+                        CONTEXT_WINDOW[guild_id].pop(0)
 
                 return response
 
@@ -133,6 +141,10 @@ async def on_ready():
 @client.event
 async def on_message(message):
     if message.author == client.user:
+        return
+
+    # Ignore DMs
+    if message.guild is None:
         return
 
     mentioned = client.user in message.mentions
@@ -175,7 +187,7 @@ def main():
             ENABLE_CONTEXT = True
             CONTEXT_WINDOW_SIZE = args.context_window_size
 
-        if args.personalized:
+        if args.personalised:
             if not os.path.exists("info.json"):
                 raise Exception("Personalised info file (info.json) not found")
 
