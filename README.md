@@ -4,8 +4,7 @@
 
 This Discord ChatBot uses an LLM, via OpenRouter, to communicate with Discord users when mentioned.
 
-The model used is llama-3.3-70b-instruct by Meta. It has a large number of parameters and is fine-tuned for instructions, making it decent for this chatbot purpose. Plus its 'flexibility' on wording makes it great to have in a server with friends, due to some interesting answers it may provide. It also supports many languages.
-
+The default model used is grok4.20, it is powerful but kind with token usage.
 ## Setup
 
 ### OpenRouter
@@ -120,9 +119,31 @@ python bot.py
 
 ## Usage
 
+To enable context window use the `--context-window-size` flag with an integer which will be the number of previous 
+message used in the bot context.
+
+To enabled personalized content use the `--personalised` flag with no arguments.
+
+### Examples
+
+```bash
+python bot.py --context-window-size 5 --personalised 
+```
+
+This will use context with 5 messages and personalised messages.
+
+```bash
+python bot.py
+```
+
+This is the basic usage, no context, no personalisation, all info comes from the instructions file.
+
 To update the instructions, change the instructions.txt file as you wish.
 (If using JustRunMy.App, you can navigate to the files on your application and click on the edit button)
 Then restart the app if it was running for the changes to work.
+
+You can also update the _info.json_ file (or remove) to use personalised info for a person.
+
 
 By now everything should be correct (or almost) so you should have an online bot on your server. To use it, mention it 
 or reply to a bot reply for it to answer you.
