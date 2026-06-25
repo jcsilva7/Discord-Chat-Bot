@@ -1,6 +1,7 @@
 import os
 import discord
 import aiohttp
+import sys
 from dotenv import load_dotenv
 from console_log import console_log
 
@@ -10,6 +11,10 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
+
+ENABLE_CONTEXT = False
+CONTEXT_WINDOW_SIZE = 0
+CONTEXT_WINDOW = []
 
 async def get_model_response(message: discord.Message) -> str|None:
     API_KEY = os.getenv("API_KEY")
@@ -31,17 +36,29 @@ async def get_model_response(message: discord.Message) -> str|None:
     with open("instructions.txt", 'r') as f:
         instructions = f.read().strip()
 
-    prompt = f"""
-        {instructions}
-        This is the message by {nick}:
-        {content}
-    """
+    if ENABLE_CONTEXT:
+        prompt = f"""
+            {instructions}
+            These are the {CONTEXT_WINDOW_SIZE} previous messages and answers
+            in the format "User_Nickname: user_message\nModel_response":
+            {CONTEXT_WINDOW}
+            This is the message by {nick}:
+            {content}
+        """
+    else:
+        prompt = f"""
+            {instructions}
+            This is the message by {nick}:
+            {content}
+        """
 
     payload = {
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        # CHANGE MODEL HERE
+        "model": "x-ai/grok-4.20",
         "messages": [
             {"role": "system", "content": prompt}
         ],
+        # CHANGE MAX TOKEN USAGE HERE
         "max_tokens": 200,
         "temperature": 0.7
     }
@@ -63,14 +80,23 @@ async def get_model_response(message: discord.Message) -> str|None:
                     return None
 
                 data = await resp.json()
-                return data["choices"][0]["message"]["content"].strip()
+                response = data["choices"][0]["message"]["content"].strip()
+
+                CONTEXT_WINDOW.append(f"{nick}: {content}\n{response}")
+
+                # Cut previous messages
+                if len(CONTEXT_WINDOW) > CONTEXT_WINDOW_SIZE:
+                    CONTEXT_WINDOW.pop(0)
+
+                return response
+
     except Exception as e:
         console_log(f"Error getting message from model: {e}")
         return None
 
-async def send_message(text: str, message: discord.Message):
+async def send_message(text: str | None, message: discord.Message):
     if not text:
-        text = "Ups! Algo correu mal..."
+        text = "Something went wrong... Ask later."
 
     try:
         await message.reply(text, mention_author=False)
@@ -109,8 +135,22 @@ async def on_message(message):
         return
 
 def main():
+    global CONTEXT_WINDOW_SIZE, ENABLE_CONTEXT
+
     try:
+        if len(sys.argv) > 1:
+            CONTEXT_WINDOW_SIZE = int(sys.argv[1])
+            if CONTEXT_WINDOW_SIZE <= 0:
+                raise Exception("Context window size must be greater than 0")
+            ENABLE_CONTEXT = True
+
+        if DISCORD_TOKEN is None:
+            raise Exception("No Discord token provided")
+
         client.run(DISCORD_TOKEN)
+    except ValueError:
+        console_log("Wrong arguments: python3 bot.py {Context Window or Nothing if disabled}")
+        return
     except Exception as e:
         console_log(str(e))
 
