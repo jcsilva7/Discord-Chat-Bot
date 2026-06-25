@@ -54,17 +54,17 @@ async def get_model_response(message: discord.Message) -> str|None:
 
     if ENABLE_PERSONALISED:
         with open("info.json", "r") as info_file:
-            data = json.load(info_file)
+            user_data = json.load(info_file)
 
         # Check who is mentioned
-        matches = [key for key in data.keys() if key.lower() in content.lower()]
+        matches = [key for key in user_data.keys() if key.lower() in content.lower()]
 
         if matches:
             prompt += "\nThis is personalized info from people mentioned, make sure to include it\n"
             for match in matches:
                 prompt += f"""
                         {match} personal info:
-                        {data[match]}
+                        {user_data[match]}
                     """
 
     prompt += f"""
