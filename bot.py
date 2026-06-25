@@ -162,8 +162,8 @@ def main():
     try:
         parser.add_argument("--context-window-size", type=int, default=CONTEXT_WINDOW_SIZE,
                             help="Number of messages in the chatbot context window, must include an integer as argument")
-        parser.add_argument("--personalized", action="store_true",
-                            help="Enabled personalized info for users fetched from a json file "
+        parser.add_argument("--personalised", action="store_true",
+                            help="Enabled personalised info for users fetched from a json file "
                                  "with users as keys and descriptions as values")
 
         args = parser.parse_args()
@@ -177,7 +177,7 @@ def main():
 
         if args.personalized:
             if not os.path.exists("info.json"):
-                raise Exception("Personalized info file (info.json) not found")
+                raise Exception("Personalised info file (info.json) not found")
 
             ENABLE_PERSONALISED = True
 
